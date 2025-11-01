@@ -1,47 +1,32 @@
-import express from "express";
-import { PORT } from "./env.js";
+import express from 'express'
+import fetch from 'node-fetch' // or native fetch in Node 18+
+const app = express()
+app.use(express.json())
 
-const app = express();
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434/api/generate'
 
-app.use(express.json());
-
-//get request
-app.get('/',(req,res)=>{
-  res.send('Welcome the the Subscription Tracker API')
-});
-
-app.listen(PORT, async () => {
-  console.log(`Subscription Tracker API ig on PORT ${PORT} `);
-
-});
-
-app.post('/chat', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: "No message provided" });
-
+app.post('/api/local-llm', async (req, res) => {
   try {
-    // Call local LLM server
-    const response = await fetch('http://localhost:11434/api/generate', {
+    const payload = {
+      model: req.body.model || 'gemma2:9b',
+      prompt: req.body.prompt || req.body.text || '',
+      stream: false,
+      // copy other options from req.body if you want
+    }
+
+    const resp = await fetch(OLLAMA_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-         model: "gemma2:9b",
-        prompt: message,
-        max_tokens: 200  // adjust as needed
-        })
-    });
+      body: JSON.stringify(payload),
+    })
 
-    const data = await response.json();
-
-    // Assuming LLM returns { text: "..." }
-    res.json({ reply: data.text });
-
+    const text = await resp.text()
+    // forward status (or always 200) — but forwarding preserves LLM error messages
+    res.status(resp.status).send(text)
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to get response from local LLM' });
+    console.error('Proxy error:', err)
+    res.status(500).json({ error: 'Proxy to local LLM failed' })
   }
-});
+})
 
-app.listen(PORT, () => {
-  console.log(`API running on port ${PORT}`);
-});
+app.listen(3001, () => console.log('Proxy server listening on http://localhost:3001'))

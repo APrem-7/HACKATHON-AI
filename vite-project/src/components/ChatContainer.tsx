@@ -22,35 +22,62 @@ const ChatContainer: React.FC = () => {
 
   // Try to call local API; fallback to local simulated reply.
   const simulateLocalLLM = async (userText: string): Promise<string> => {
-    // Attempt to POST to /api/local-llm. This lets the UI be ready to
-    // connect to a real local LLM backend later. If fetch fails (no
-    // backend), return a placeholder response after a short delay.
+    const defaultUrl = 'http://localhost:11434/api/generate'
+    const LLM_URL = (import.meta.env.VITE_LOCAL_LLM_URL as string) || defaultUrl
+
     try {
       const controller = new AbortController()
-     
-      const res = await fetch('http://localhost:11434/api/generate', {
+      const timeout = setTimeout(() => controller.abort(), 8000)
+
+      const res = await fetch(LLM_URL, {
         method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-         model: "gemma2:9b",
-        prompt: userText,
-        max_tokens: 200  // adjust as needed
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma2:9b-swaysthabot', // <-- ensure this exact model name exists in `ollama ps` or your LLM service
+          prompt: userText,
+          stream: false,
         }),
         signal: controller.signal,
       })
-    
 
-      if (!res.ok) throw new Error('non-2xx')
-      const data = await res.json()
-      // expect { reply: string } shape from local LLM
-      return data.reply || 'No reply from local LLM.'
-    } catch (err) {
-      // Fallback placeholder responses to simulate a local LLM.
-     
-      // small pseudo-random selection to vary responses
-      const reply ="Sorry LLM not connected womp womp!"
+      clearTimeout(timeout)
+
+      const text = await res.text()
+      // try parse JSON safely
+      let data: any = null
+      try {
+        data = JSON.parse(text)
+      } catch (e) {
+        // not JSON, keep data as null
+      }
+
+      // Debug logs (remove in prod)
+      console.debug('LLM fetch status:', res.status, 'raw text:', text)
+
+      // check common shapes and fall back to raw text when appropriate
+      const reply =
+        data?.response ?? // common for ollama generate { response: '...' }
+        data?.reply ??
+        data?.output_text ??
+        data?.result?.output_text ??
+        data?.choices?.[0]?.text ??
+        (Array.isArray(data?.output) && data.output[0]?.content?.parts?.[0]) ??
+        (text && text.length < 2000 ? text : null)
+
+      if (reply) return String(reply)
+
+      if (res.ok) return 'Local model responded but no text was found in the response.'
+
+      throw new Error(`Local LLM returned HTTP ${res.status}`)
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        console.warn('Local LLM request aborted (timeout).')
+        return 'Local LLM request timed out.'
+      }
+      console.error('Local LLM fetch failed:', err)
+      // simulated delay for UX parity with an LLM
       await new Promise((r) => setTimeout(r, 700 + Math.random() * 800))
-      return reply
+      return 'Sorry — local LLM not connected.'
     }
   }
 
