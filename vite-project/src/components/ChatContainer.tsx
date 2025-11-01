@@ -131,11 +131,16 @@ const ChatContainer: React.FC = () => {
     <div className="bg-transparent">
       <div className="grid grid-cols-1 gap-6">
         {/* Main chat area */}
-        <section className="flex flex-col h-[70vh]">
+        <section className="flex flex-col h-[70vh] bg-slate-900/60 rounded-xl p-6 shadow-xl">
+          {/* header */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-slate-100">Chat</h2>
+            <p className="text-sm text-slate-400">Ask the assistant — your local LLM will respond below.</p>
+          </div>
           {/* messages area: let this grow so the input can sit at the bottom */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+            className="flex-1 overflow-y-auto pr-2 pb-2 space-y-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
             aria-live="polite"
           >
             <div className="p-4">
@@ -153,8 +158,10 @@ const ChatContainer: React.FC = () => {
           {/* input area */}
           {/* input area: pushed to bottom of the chat container */}
           <div className="mt-auto px-0 w-full">
-            <ChatInput onSend={handleSend} disabled={loading} />
-            {loading && <div className="text-xs text-slate-400 mt-2">Thinking…</div>}
+            <div className="border-t border-slate-800 pt-4">
+              <ChatInput onSend={handleSend} disabled={loading} />
+              {loading && <div className="text-xs text-slate-400 mt-2">Thinking…</div>}
+            </div>
           </div>
         </section>
       </div>
