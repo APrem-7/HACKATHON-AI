@@ -21,9 +21,32 @@ const ChatContainer: React.FC = () => {
   }, [messages])
 
   // Try to call local API; fallback to local simulated reply.
-  const simulateLocalLLM = async (userText: string): Promise<string> => {
+  // This implementation builds context from the last 2 exchanges (4 messages)
+  // using the current `messages` state, but also accepts an optional
+  // `overrideMessages` to avoid React state timing issues when adding the
+  // immediate user message in `handleSend`.
+  const simulateLocalLLM = async (
+    userText: string,
+    overrideMessages?: Message[],
+  ): Promise<string> => {
     const defaultUrl = 'http://localhost:11434/api/generate'
     const LLM_URL = (import.meta.env.VITE_LOCAL_LLM_URL as string) || defaultUrl
+
+    // Build context from last 2 exchanges (4 messages total: 2 user + 2 bot)
+    const sourceMessages = overrideMessages ?? messages
+    const recentMessages = sourceMessages.slice(-4)
+    let contextPrompt = ''
+
+    if (recentMessages.length > 0) {
+      contextPrompt = 'Previous conversation:\n'
+      recentMessages.forEach((msg) => {
+        const prefix = msg.role === 'user' ? 'User: ' : 'Assistant: '
+        contextPrompt += `${prefix}${msg.text}\n`
+      })
+      contextPrompt += '\n'
+    }
+
+    const fullPrompt = contextPrompt + `User: ${userText}\nAssistant:`
 
     try {
       const controller = new AbortController()
@@ -33,8 +56,8 @@ const ChatContainer: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gemma2:9b-swaysthabot', // <-- ensure this exact model name exists in `ollama ps` or your LLM service
-          prompt: userText,
+          model: 'gemma2:9b-swaysthabot', // ensure this model name exists
+          prompt: fullPrompt,
           stream: false,
         }),
         signal: controller.signal,
@@ -84,11 +107,19 @@ const ChatContainer: React.FC = () => {
   // Handles sending a user message and obtaining a bot reply.
   const handleSend = async (text: string) => {
     const userMsg: Message = { id: String(Date.now()) + '-u', role: 'user', text }
+
+    // Optimistically add the user message to the UI
     setMessages((m) => [...m, userMsg])
     setLoading(true)
 
     try {
-      const botText = await simulateLocalLLM(text)
+      // Build recent context including the just-sent user message to avoid
+      // React state timing issues (setState is async).
+      const MAX_PAIRS = 2
+      const maxMessages = MAX_PAIRS * 2
+      const recent = [...messages, userMsg].slice(-maxMessages)
+
+      const botText = await simulateLocalLLM(text, recent)
       const botMsg: Message = { id: String(Date.now()) + '-b', role: 'bot', text: botText }
       setMessages((m) => [...m, botMsg])
     } finally {
