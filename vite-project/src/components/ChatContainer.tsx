@@ -27,15 +27,18 @@ const ChatContainer: React.FC = () => {
     // backend), return a placeholder response after a short delay.
     try {
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 4000)
-
-      const res = await fetch('/api/local-llm', {
+     
+      const res = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userText }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+         model: "gemma2:9b",
+        prompt: userText,
+        max_tokens: 200  // adjust as needed
+        }),
         signal: controller.signal,
       })
-      clearTimeout(timeout)
+    
 
       if (!res.ok) throw new Error('non-2xx')
       const data = await res.json()
@@ -43,13 +46,9 @@ const ChatContainer: React.FC = () => {
       return data.reply || 'No reply from local LLM.'
     } catch (err) {
       // Fallback placeholder responses to simulate a local LLM.
-      const placeholders = [
-        "I'm a local LLM placeholder — I can answer later when your LLM is connected.",
-        "Got it! Here's a simulated reply from your local model.",
-        "Here's a helpful placeholder answer while the local LLM is offline.",
-      ]
+     
       // small pseudo-random selection to vary responses
-      const reply = placeholders[Math.floor(Math.random() * placeholders.length)]
+      const reply ="Sorry LLM not connected womp womp!"
       await new Promise((r) => setTimeout(r, 700 + Math.random() * 800))
       return reply
     }
