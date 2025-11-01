@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react'
-import SearchBar from './components/SearchBar'
 import ChatContainer from './components/ChatContainer'
 
 // Root app component. Sets dark mode class on the <html> element and
@@ -20,13 +19,8 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-900 text-slate-100">
       {/* App container: responsive centered layout */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search bar at the top */}
-        <SearchBar />
-
-        {/* Chat container below search bar */}
-        <div className="mt-6">
+          {/* Chat container */}
           <ChatContainer />
-        </div>
       </div>
     </div>
   )

@@ -129,20 +129,9 @@ const ChatContainer: React.FC = () => {
 
   return (
     <div className="bg-transparent">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Left column for LLMResponse info -- placeholder section to show local LLM responses */}
-        <aside className="md:col-span-1 bg-slate-800/40 rounded-lg p-4 text-slate-200">
-          <h3 className="text-sm font-semibold mb-2">Local LLM</h3>
-          <p className="text-sm text-slate-300 mb-3">This area shows responses from your local model.</p>
-          <div className="text-xs text-slate-400">
-            Placeholder: responses here mirror the chatbot's bot messages. When you connect a real
-            LLM to <code className="bg-slate-700 px-1 rounded">/api/local-llm</code> the content will
-            originate from your model.
-          </div>
-        </aside>
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Main chat area */}
-        <section className="md:col-span-3 flex flex-col h-[60vh] md:h-[70vh]">
+        <section className="flex flex-col h-[70vh]">
           {/* messages area */}
           <div
             ref={scrollRef}
