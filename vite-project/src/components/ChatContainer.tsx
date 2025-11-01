@@ -132,7 +132,7 @@ const ChatContainer: React.FC = () => {
       <div className="grid grid-cols-1 gap-6">
         {/* Main chat area */}
         <section className="flex flex-col h-[70vh]">
-          {/* messages area */}
+          {/* messages area: let this grow so the input can sit at the bottom */}
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
@@ -151,7 +151,8 @@ const ChatContainer: React.FC = () => {
           </div>
 
           {/* input area */}
-          <div className="mt-2">
+          {/* input area: pushed to bottom of the chat container */}
+          <div className="mt-auto px-0 w-full">
             <ChatInput onSend={handleSend} disabled={loading} />
             {loading && <div className="text-xs text-slate-400 mt-2">Thinking…</div>}
           </div>
